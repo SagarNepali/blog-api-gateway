@@ -1,0 +1,61 @@
+server:
+  port: 9191
+
+spring:
+  application:
+    name: blog-api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: blog-user-service
+          uri: lb://blog-user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: blog-user-service
+                fallbackuri: forward:/userServiceFallback
+        - id: blog-comment-service
+          uri: lb://blog-comment-service
+          predicates:
+            - Path=/api/v1/comments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: blog-comment-service
+                fallbackuri: forward:/commentServiceFallback
+        - id: blog-post-service
+          uri: lb://blog-post-service
+          predicates:
+            - Path=/api/v1/posts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: blog-post-service
+                fallbackuri: forward:/postServiceFallback
+
+hysrix:
+  command:
+    fallbackcmd:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 4000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: hystrix.stream
+
+
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    hostname: localhost
